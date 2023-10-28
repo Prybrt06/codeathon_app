@@ -33,6 +33,7 @@ class ItemProvider with ChangeNotifier {
   }
 
   Future<List<ItemModel>> getSpecificItem({required String category}) async {
+    // print("aaaaa $category");
     Map<String, String> jsonBody = {
       "itemName": category,
     };
@@ -46,6 +47,45 @@ class ItemProvider with ChangeNotifier {
     );
 
     var jsonResponse = await jsonDecode(res.body);
+
+    print(jsonResponse);
+
+    int len = jsonResponse["items"].length;
+
+    List<ItemModel> items = [];
+
+    for (int i = 0; i < len; i++) {
+      ItemModel item = ItemModel(
+        productType: jsonResponse["items"][i]["productType"],
+        name: jsonResponse["items"][i]["name"],
+        company: jsonResponse["items"][i]["company"],
+        color: jsonResponse["items"][i]["color"],
+        price: jsonResponse["items"][i]["price"],
+      );
+
+      items.add(item);
+    }
+
+    return items;
+  }
+
+  Future<List<ItemModel>> getSpecificItemFromImage({required String category}) async {
+    // print("aaaaa $category");
+    Map<String, String> jsonBody = {
+      "itemName": category,
+    };
+
+    var body = await jsonEncode(jsonBody);
+
+    var res = await http.post(
+      Uri.parse("${apiUrl}/categoryFromImage"),
+      headers: {"content-type": "application/json"},
+      body: body,
+    );
+
+    var jsonResponse = await jsonDecode(res.body);
+
+    print(jsonResponse);
 
     int len = jsonResponse["items"].length;
 

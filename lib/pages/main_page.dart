@@ -1,14 +1,112 @@
+import 'dart:io';
+
 import 'package:codeathon/models/item_model.dart';
+import 'package:codeathon/pages/result_from_image_page.dart';
 import 'package:codeathon/pages/search_page.dart';
 import 'package:codeathon/pages/search_result_page.dart';
+import 'package:codeathon/pages/text_from_image_page.dart';
 import 'package:codeathon/provider/item_provider.dart';
 import 'package:codeathon/widgets/item_widget.dart';
 import 'package:flutter/material.dart';
+import 'package:google_ml_kit/google_ml_kit.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 // ignore: must_be_immutable
-class MainPage extends StatelessWidget {
+class MainPage extends StatefulWidget {
+  @override
+  State<MainPage> createState() => _MainPageState();
+}
+
+class _MainPageState extends State<MainPage> {
   TextEditingController searchController = TextEditingController();
+
+  File? _image;
+  final picker = ImagePicker();
+
+  String scannedText = "";
+
+  String imageLable = "";
+
+  Future<String> detextText() async {
+    final inputImage = InputImage.fromFilePath(_image!.path);
+    final textDetector = GoogleMlKit.vision.textRecognizer();
+
+    RecognizedText recognizedText = await textDetector.processImage(inputImage);
+
+    await textDetector.close();
+
+    scannedText = "";
+
+    for (TextBlock block in recognizedText.blocks) {
+      for (TextLine line in block.lines) {
+        for (TextElement element in line.elements) {
+          scannedText += '${element.text} ';
+        }
+      }
+    }
+
+    // print("hello $scannedText");
+
+    setState(() {});
+
+    return scannedText;
+  }
+
+  Future<String> getImageLabels() async {
+    final inputImage = InputImage.fromFilePath(_image!.path);
+    ImageLabeler imageLabeler = ImageLabeler(options: ImageLabelerOptions());
+
+    List<ImageLabel> labels = await imageLabeler.processImage(inputImage);
+
+    StringBuffer sb = StringBuffer();
+
+    for (ImageLabel imageLabel in labels) {
+      String lbltext = imageLabel.label;
+      // double confidence = imageLabel.confidence;
+
+      sb.write(lbltext);
+      sb.write(" ");
+      // sb.write(confidence);
+    }
+
+    imageLabeler.close();
+    imageLable = sb.toString();
+
+    print("Hello");
+
+    print(imageLable);
+
+    return imageLable;
+  }
+
+//Image Picker function to get image from gallery
+  Future<String> getImageFromGallery() async {
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+
+    setState(() {
+      if (pickedFile != null) {
+        _image = File(pickedFile.path);
+      }
+    });
+    String detectedText = await detextText();
+
+    return detectedText;
+  }
+
+  Future<String> getImageFromGalleryForLabelling() async {
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+
+    setState(() {
+      if (pickedFile != null) {
+        _image = File(pickedFile.path);
+      }
+    });
+
+    String label = await getImageLabels();
+
+    return label;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -26,6 +124,33 @@ class MainPage extends StatelessWidget {
               );
             },
             icon: const Icon(Icons.search),
+          ),
+          IconButton(
+            onPressed: () async {
+              String category = await getImageFromGallery();
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => TextFromImagePage(
+                    text: category,
+                  ),
+                ),
+              );
+            },
+            icon: Icon(
+              Icons.image_aspect_ratio,
+            ),
+          ),
+          IconButton(
+            onPressed: () async {
+              String category = await getImageFromGalleryForLabelling();
+
+              Navigator.of(context).push(MaterialPageRoute(
+                builder: (context) => ResultFromImagePage(category: category),
+              ));
+            },
+            icon: Icon(
+              Icons.image_search,
+            ),
           ),
         ],
       ),
@@ -52,10 +177,9 @@ class MainPage extends StatelessWidget {
                       child: TextFormField(
                         controller: searchController,
                         decoration: const InputDecoration(
-                          icon: Icon(Icons.search),
-                          hintText: "Search",
-                          border: InputBorder.none
-                        ),
+                            icon: Icon(Icons.search),
+                            hintText: "Search",
+                            border: InputBorder.none),
                         onFieldSubmitted: (value) {
                           Navigator.of(context).push(MaterialPageRoute(
                             builder: (context) => SearchResultPage(

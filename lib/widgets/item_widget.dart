@@ -40,10 +40,23 @@ class ItemWidget extends StatelessWidget {
             item.name,
             style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
-          Text(
-            item.company,
-            style: TextStyle(
-              color: Colors.blueGrey,
+          Container(
+            child: Row(
+              children: [
+                Text(
+                  item.company,
+                  style: TextStyle(
+                    color: Colors.blueGrey,
+                  ),
+                ),
+                Spacer(),
+                Text(
+                  item.color,
+                  style: TextStyle(
+                    color: Colors.blueGrey,
+                  ),
+                )
+              ],
             ),
           ),
           Spacer(),
